@@ -1,9 +1,6 @@
-const Event = require('../models/Event');
-
-exports.getAllEvents = async (req, res) => {
-  const events = await Event.find().populate('userId', 'name email');
-  res.json(events);
-};
+const transporter = require('../config/nodemailer');
+const pug = require('pug');
+const path = require('path');
 
 exports.createEvent = async (req, res) => {
   const { title, location, date, description } = req.body;
@@ -16,11 +13,18 @@ exports.createEvent = async (req, res) => {
     userId: req.user._id
   });
 
-  req.eventData = event; // for email in Task 4
+  const html = pug.renderFile(path.join(__dirname, '../emails/eventCreated.pug'), {
+    title,
+    location,
+    date
+  });
+
+  await transporter.sendMail({
+    to: req.user.email,
+    subject: 'New Event Has Been Created',
+    html
+  });
+
   res.status(201).json(event);
 };
-
-exports.getMyEvents = async (req, res) => {
-  const events = await Event.find({ userId: req.user._id });
-  res.json(events);
-};
+    
